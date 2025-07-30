@@ -59,6 +59,7 @@
             margin-left: auto;
             margin-right: auto;
         }
+        /* Style adjustments for Hotmart might be needed, but keeping original styles for now */
         .mndpay_btn {
             display: inline-block;
             background-color: var(--primary-color);
@@ -83,6 +84,7 @@
             border-radius: 14px;
             padding: 25px;
             margin-top: 30px;
+            margin-bottom: 30px; /* Added margin for spacing */
         }
         .bonus-box h2 {
             font-weight: 700;
@@ -135,11 +137,19 @@
                 </ul>
             </div>
             
-            <a href="javascript:void(0)" data-mndpay="01982ebf-2760-71a5-a603-5f4128acaa06" class="mndpay_btn">
-                Upgrade Now
-            </a>
+            <!-- HOTMART - Sales Funnel Widget -->
+            <!--- sales funnel container --->
+            <div id="hotmart-sales-funnel"></div>
+
+            <!--- script load and setup --->
+            <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
+            <script>
+            checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel')
+            </script>
+            <!-- HOTMART - Sales Funnel Widget -->
+
         </div>
     </div>
-    <script src="https://upsell.mundpay.com/script.js"></script>
+    <!-- Script da Mundpay removido daqui -->
 </body>
 </html>

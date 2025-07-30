@@ -91,6 +91,7 @@
             outline: none;
             border-color: var(--primary-color);
         }
+        /* Style class for old button is kept in case you want to use it for other elements */
         .mndpay_btn {
             display: inline-block;
             background-color: var(--primary-color);
@@ -129,10 +130,19 @@
                     <label for="instagram-user">Instagram username (optional)</label>
                     <input type="text" id="instagram-user" name="instagram-user" placeholder="e.g., @johndoe">
                 </div>
-                <a href="javascript:void(0)" data-mndpay="01982ec6-74ab-71d4-919e-8afd608ff938" class="mndpay_btn">UPGRADE MY PLAN NOW</a>
+                
+                <!-- HOTMART - Sales Funnel Widget -->
+                <!--- sales funnel container --->
+                <div id="hotmart-sales-funnel"></div>
+                <!--- script load and setup --->
+                <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
+                <script>
+                checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel')
+                </script>
+                <!-- HOTMART - Sales Funnel Widget -->
             </div>
         </div>
     </div>
-    <script src="https://app.mundpay.com/js/oneclick.js"></script>
+    <!-- Script da Mundpay removido -->
 </body>
 </html>
