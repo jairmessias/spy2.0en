@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Success! Access the application now!</title>
+    <title>Attention! Add one more feature</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
@@ -17,6 +17,7 @@
             --white-color: #ffffff;
             --border-color: #ebebeb;
             --success-color: #28a745;
+            --warning-color: #ffc107;
         }
         * {
             margin: 0;
@@ -41,15 +42,11 @@
             padding: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.07);
         }
-        .icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
         h1 {
             font-weight: 900;
             font-size: 2.5rem;
-            color: var(--dark-text);
-            margin-bottom: 15px;
+            color: var(--primary-color);
+            margin-bottom: 25px;
         }
         p {
             font-size: 1.1rem;
@@ -58,6 +55,15 @@
             max-width: 650px;
             margin-left: auto;
             margin-right: auto;
+        }
+        p.warning-text {
+            color: #d9534f;
+            font-weight: 700;
+        }
+        p.price-text {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-text);
         }
         .mndpay_btn {
             display: inline-block;
@@ -83,6 +89,7 @@
             border-radius: 14px;
             padding: 25px;
             margin-top: 30px;
+            margin-bottom: 30px;
         }
         .bonus-box h2 {
             font-weight: 700;
@@ -99,31 +106,15 @@
             margin-bottom: 10px;
             color: var(--dark-text);
         }
-        .bonus-box li span {
-            color: var(--light-text);
-            font-size: 0.9em;
-        }
-        .highlight-warning {
-            background-color: rgba(217, 83, 79, 0.08);
-            color: #c9302c;
-            font-weight: 700;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #d9534f;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="main-content">
             <img src="https://i.ibb.co/6cMDR6GK/rsm5vxd23wx0bzq5vptd4dxlf.png" alt="CheatFinder Logo" style="max-width: 90px; display: block; margin: 0 auto 20px auto; border-radius: 50%;">
-            <h1>Congratulations! Your purchase is being finalized</h1>
-            <p class="highlight-warning">Please do not close this page or you may miss the whole truth.</p>
-            <p><b>Would you like to recover conversations, photos and videos that were deleted from their cell phone?</b></p>
-            <p>You can restore all deleted messages, photos, and videos from the past 90 days, giving you access to everything that was hidden. This restoration is performed using <strong>artificial intelligence</strong>, which reconstructs files containing sensitive content.</p>
-            <p>Recovering lost files is a data-intensive process, which is why we charge a small fee for those who want access to all previously deleted secrets.</p>
-            <p><b>Click the button below to receive your restored files.</b></p>
-
+            <h1>Priority Access: Skip the Line!</h1>
+            <p>Your access to the app has been granted, but what if I told you there's a way to speed up this process even further? Now that you're so close to accessing messages, photos, and even real-time locations, wouldn't it be incredible if you could skip the line and receive this information immediately?</p>
+            <p>With our <b>priority queue</b>, you can ensure that the messages and information you want are delivered much faster—practically in real time. It's like having a VIP pass: while others wait, you get the messages first.</p>
             <div class="bonus-box">
                 <h2>Exclusive bonuses included for free:</h2>
                 <ul>
@@ -134,12 +125,15 @@
                     <li>Future Recovery Discount <span>(Get a discount coupon for your next recovery request)</span></li>
                 </ul>
             </div>
+            <p>All of this without waiting in the standard queue. It's the fastest and most efficient way to get the answers you need right now.</p>
+            <p class="warning-text">But be aware: this priority option is exclusive and can only be activated now while you're setting up the app.</p>
+            <p><b>Remember: the truth is just one click away.</b> Don't let doubts control you any longer. Activate your priority now and uncover everything quickly and easily.</p>
             
-            <a href="javascript:void(0)" data-mndpay="01982ebf-2760-71a5-a603-5f4128acaa06" class="mndpay_btn">
-                Upgrade Now
+            <a href="javascript:void(0)" data-mndpay="01982ec4-35f8-735c-8229-d1e66261be0e" class="mndpay_btn">
+                🥇 Activate Priority
             </a>
         </div>
     </div>
-    <script src="https://upsell.mundpay.com/script.js"></script>
+    <script src="https://app.mundpay.com/js/oneclick.js"></script>
 </body>
 </html>

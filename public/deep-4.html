@@ -1,0 +1,187 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepCheck AI - Features</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-bg { background: linear-gradient(135deg, #075e54, #25d366); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function Header() {
+            return (
+                <header className="bg-white shadow-sm py-4 sticky top-0 z-10">
+                    <div className="container mx-auto px-4 flex justify-between items-center">
+                        <h1 className="text-2xl font-bold text-green-900">DeepCheck AI - Features</h1>
+                        <nav>
+                            <a href="#features" className="mx-4 text-gray-600 hover:text-green-600">Features</a>
+                            <a href="#pricing" className="mx-4 text-gray-600 hover:text-green-600">Pricing</a>
+                            <a href="#download" className="mx-4 text-gray-600 hover:text-green-600">Download</a>
+                        </nav>
+                    </div>
+                </header>
+            );
+        }
+
+        function Hero() {
+            return (
+                <section className="hero-bg text-white py-20">
+                    <div className="container mx-auto px-4 text-center">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-6">Unlock WhatsApp's Full Potential with DeepCheck AI</h2>
+                        <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto">Advanced AI-powered features to secure, recover, and optimize your WhatsApp experience with cutting-edge technology.</p>
+                        <a href="#download" className="inline-block bg-white text-green-900 font-semibold py-3 px-8 rounded-full hover:bg-green-100 transition">Get DeepCheck AI Now</a>
+                    </div>
+                </section>
+            );
+        }
+
+        function Features() {
+            const features = [
+                { title: "AI Message Security", description: "Scans and protects your chats from phishing, malware, and suspicious links.", icon: "🛡️" },
+                { title: "Deleted Data Recovery", description: "Recovers lost messages, photos, videos, and documents with AI precision.", icon: "🔄" },
+                { title: "Chat Analytics", description: "Gain insights into your conversation patterns and media usage with detailed reports.", icon: "📊" },
+                { title: "Smart Automation", description: "Automate responses and manage chats efficiently with AI-driven tools.", icon: "🤖" },
+            ];
+
+            return (
+                <section id="features" className="py-16 bg-white">
+                    <div className="container mx-auto px-4">
+                        <h2 className="text-3xl font-bold text-center text-green-900 mb-12">Why Choose DeepCheck AI - Features?</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {features.map((feature, index) => (
+                                <div key={index} className="text-center p-6 bg-gray-50 rounded-lg shadow-md">
+                                    <span className="text-4xl mb-4 block">{feature.icon}</span>
+                                    <h3 className="text-xl font-semibold text-green-900 mb-2">{feature.title}</h3>
+                                    <p className="text-gray-600">{feature.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        function Pricing() {
+            const plan = {
+                name: "Lifetime Plan",
+                price: "$37",
+                features: ["AI Message Security", "Deleted Data Recovery", "Chat Analytics", "Smart Automation", "Priority Support"]
+            };
+
+            return (
+                <section id="pricing" className="py-16 bg-gray-100">
+                    <div className="container mx-auto px-4">
+                        <h2 className="text-3xl font-bold text-center text-green-900 mb-12">Pricing</h2>
+                        <div className="flex justify-center">
+                            <div className="bg-white p-6 rounded-lg shadow-md text-center w-full max-w-md">
+                                <h3 className="text-2xl font-semibold text-green-900 mb-4">{plan.name}</h3>
+                                <p className="text-3xl font-bold text-green-600 mb-6">{plan.price}</p>
+                                <ul className="text-gray-600 mb-6">
+                                    {plan.features.map((feature, i) => (
+                                        <li key={i} className="mb-2">✓ {feature}</li>
+                                    ))}
+                                </ul>
+                                <a href="#download" className="inline-block bg-green-600 text-white font-semibold py-3 px-8 rounded-full hover:bg-green-700 transition">Purchase Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        function Download() {
+            return (
+                <section id="download" className="py-16 bg-green-900 text-white">
+                    <div className="container mx-auto px-4 text-center">
+                        <h2 className="text-3xl font-bold mb-6">Download DeepCheck AI - Features Today</h2>
+                        <p className="text-lg mb-8 max-w-2xl mx-auto">Enhance your WhatsApp with AI-driven security, recovery, and analytics. Available on iOS and Android.</p>
+                        <div className="flex justify-center gap-4">
+                            <a href="#" className="inline-block bg-white text-green-900 font-semibold py-3 px-8 rounded-full hover:bg-green-100 transition">App Store</a>
+                            <a href="#" className="inline-block bg-white text-green-900 font-semibold py-3 px-8 rounded-full hover:bg-green-100 transition">Google Play</a>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        function Footer() {
+            return (
+                <footer className="bg-gray-800 text-white py-8">
+                    <div className="container mx-auto px-4 text-center">
+                        <p className="mb-4">&copy; 2025 DeepCheck AI - Features. All rights reserved.</p>
+                        <div className="flex justify-center gap-4">
+                            <a href="#" className="text-gray-400 hover:text-white">Privacy Policy</a>
+                            <a href="#" className="text-gray-400 hover:text-white">Terms of Service</a>
+                            <a href="#" className="text-gray-400 hover:text-white">Contact Us</a>
+                        </div>
+                    </div>
+                </footer>
+            );
+        }
+
+        function App() {
+            return (
+                <div>
+                    <Header />
+                    <Hero />
+                    <Features />
+                    <Pricing />
+                    <Download />
+                    <Footer />
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
