@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { X, Lock, CheckCheck, MapPin, AlertTriangle } from "lucide-react"
+import { X, Lock, CheckCheck, MapPin, AlertTriangle } from 'lucide-react'
 import Image from "next/image"
 
 // Componente do mapa que agora recebe a localização via props para ser dinâmico.
@@ -81,7 +81,7 @@ const ChatPopup = ({
               src={
                 profilePhoto ||
                 "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI="
-              }
+               || "/placeholder.svg"}
               alt="Profile"
               width={40}
               height={40}
@@ -138,6 +138,7 @@ export default function Step4Male() {
   const [selectedConvoIndex, setSelectedConvoIndex] = useState<number | null>(null)
   const [location, setLocation] = useState<{ lat: number; lng: number; city: string; country: string } | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
+  const [locationText, setLocationText] = useState<string>("Detecting location based on your connection...")
 
   const defaultLocation = {
     lat: -23.5505,
@@ -146,7 +147,7 @@ export default function Step4Male() {
     country: "Brazil",
   }
 
-  // Bloco useEffect corrigido para usar a API Route interna.
+  // Bloco useEffect com nova lógica de localização
   useEffect(() => {
     const storedPhoto = localStorage.getItem("profilePhoto")
     setProfilePhoto(
@@ -154,43 +155,92 @@ export default function Step4Male() {
       "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI=",
     )
 
-    const fetchLocation = async () => {
+    // =======================================================
+    //     NOVA LÓGICA DE LOCALIZAÇÃO COM HOTÉIS
+    // =======================================================
+    const setupLocationMap = async () => {
       try {
-        // =======================================================
-        //     MUDANÇA PRINCIPAL AQUI                              
-        // Chamando a nossa própria API Route em vez da externa.
-        // =======================================================
-        const response = await fetch('/api/location');
+        // Primeiro, busca a localização do usuário
+        const locationResponse = await fetch('https://ipapi.co/json/')
+        const locationData = await locationResponse.json()
 
-        if (!response.ok) {
-          throw new Error(`A resposta da nossa API interna não foi ok. Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // A lógica de tratamento dos dados permanece a mesma, pois nossa API
-        // repassa os dados da ip-api.com.
-        if (data.lat && data.lon) {
-          setLocation({
-            lat: data.lat,
-            lng: data.lon,
-            city: data.city,
-            country: data.country,
-          });
+        if (locationData.latitude && locationData.longitude) {
+          // Atualiza o texto da feature de localização
+          const locationFeatureText = `3 people from ${locationData.city}`
+          
+          // Busca hotéis próximos
+          await findRandomHotel(locationData.latitude, locationData.longitude, locationData)
         } else {
-          console.warn("API interna não retornou os dados esperados.", data.error);
-          setLocation(defaultLocation);
+          // Se falhar, usa o mapa padrão
+          initDefaultMap()
         }
       } catch (error) {
-        console.error("Falha ao buscar localização da API interna:", error);
-        setLocation(defaultLocation);
-      } finally {
-        setIsLoadingLocation(false);
+        console.error("Erro ao buscar localização:", error)
+        initDefaultMap()
       }
-    };
+    }
 
-    fetchLocation();
-  }, []); // O array vazio assegura que isso execute apenas uma vez.
+    const findRandomHotel = async (lat: number, lon: number, originalLocationData: any) => {
+      try {
+        const radius = 5000 // Raio de 5km
+        const query = `[out:json][timeout:25];(node["tourism"="hotel"](around:${radius},${lat},${lon});way["tourism"="hotel"](around:${radius},${lat},${lon}););out center;`
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+
+        const hotelResponse = await fetch(url)
+        const hotelData = await hotelResponse.json()
+
+        // Filtra hotéis com nome
+        const hotelsWithName = hotelData.elements.filter((el: any) => el.tags && el.tags.name)
+
+        if (hotelsWithName.length > 0) {
+          // Escolhe um hotel aleatório
+          const randomHotel = hotelsWithName[Math.floor(Math.random() * hotelsWithName.length)]
+          const hotelName = randomHotel.tags.name
+
+          // Coordenadas do hotel
+          const hotelCoords = randomHotel.center 
+            ? [randomHotel.center.lat, randomHotel.center.lon] 
+            : [randomHotel.lat, randomHotel.lon]
+
+          // Inicializa o mapa com dados do hotel
+          initMap(hotelCoords, hotelName, 'hotel')
+        } else {
+          // Se não encontrou hotéis, usa a localização da cidade
+          const cityLocation = `${originalLocationData.city}, ${originalLocationData.region}`
+          initMap([originalLocationData.latitude, originalLocationData.longitude], cityLocation, 'city')
+        }
+      } catch (error) {
+        console.error("Erro ao buscar hotéis:", error)
+        // Se a busca por hotéis falhar, usa a localização original da cidade
+        const cityLocation = `${originalLocationData.city}, ${originalLocationData.region}`
+        initMap([originalLocationData.latitude, originalLocationData.longitude], cityLocation, 'city')
+      }
+    }
+
+    const initMap = (coords: number[], name: string, type: 'hotel' | 'city') => {
+      if (type === 'hotel') {
+        setLocationText(`We detected that this person was recently at this establishment: ${name}`)
+      } else {
+        setLocationText(`Our network analysis indicates recent activity in this approximate location: ${name}`)
+      }
+
+      setLocation({
+        lat: coords[0],
+        lng: coords[1],
+        city: name,
+        country: type === 'hotel' ? 'Hotel Location' : 'City Location'
+      })
+      setIsLoadingLocation(false)
+    }
+
+    const initDefaultMap = () => {
+      setLocationText("Could not get exact location. Showing approximate location.")
+      setLocation(defaultLocation)
+      setIsLoadingLocation(false)
+    }
+
+    setupLocationMap()
+  }, [])
 
   // --- Seus dados estáticos (sem alterações) ---
   const maleImages = [
@@ -246,7 +296,7 @@ export default function Step4Male() {
           <div className="flex justify-center">
             <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
               {profilePhoto && (
-                <Image src={profilePhoto} alt="WhatsApp Profile" width={80} height={80} className="object-cover h-full w-full" unoptimized />
+                <Image src={profilePhoto || "/placeholder.svg"} alt="WhatsApp Profile" width={80} height={80} className="object-cover h-full w-full" unoptimized />
               )}
             </div>
           </div>
@@ -259,12 +309,16 @@ export default function Step4Male() {
             <h2 className="text-lg font-semibold text-gray-800">Conversation Analysis</h2>
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            <span className="font-semibold text-red-500">148 suspicious conversations</span> were found. The system recovered <span className="font-semibold text-orange-500">deleted messages</span>.
+            <span className="font-semibold text-red-500">148 suspicious conversations</span> were found during the
+            analysis. The system was able to recover{" "}
+            <span className="font-semibold text-orange-500">deleted messages</span> and some were classified as critical
+            based on the content.
           </p>
+          <p className="text-xs text-gray-500 mb-4">Tap a conversation below to view details.</p>
           <div className="space-y-3">
             {conversations.map((convo, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => setSelectedConvoIndex(index)}>
-                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-gray-300 rounded-full overflow-hidden"><Image src={convo.img} alt="Profile" width={32} height={32} className="object-cover h-full w-full" /></div><div><p className="font-medium text-sm">{convo.name}</p><p className="text-xs text-gray-500">{convo.msg}</p></div></div><span className="text-xs text-gray-400">{convo.time}</span>
+                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-gray-300 rounded-full overflow-hidden"><Image src={convo.img || "/placeholder.svg"} alt="Profile" width={32} height={32} className="object-cover h-full w-full" /></div><div><p className="font-medium text-sm">{convo.name}</p><p className="text-xs text-gray-500">{convo.msg}</p></div></div><span className="text-xs text-gray-400">{convo.time}</span>
               </div>
             ))}
           </div>
@@ -281,7 +335,7 @@ export default function Step4Male() {
           </p>
           <div className="grid grid-cols-3 gap-3">
             {maleImages.map((image, index) => (
-              <div key={index} className="aspect-square relative rounded-lg overflow-hidden"><Image src={image} alt={`Recovered media ${index + 1}`} fill className="object-cover" /></div>
+              <div key={index} className="aspect-square relative rounded-lg overflow-hidden"><Image src={image || "/placeholder.svg"} alt={`Recovered media ${index + 1}`} fill className="object-cover" /></div>
             ))}
           </div>
         </div>
@@ -304,7 +358,7 @@ export default function Step4Male() {
           <div className="flex items-center gap-2 mb-4">
             <div className="w-4 h-4 bg-green-500 rounded-full"></div><h2 className="text-lg font-semibold text-gray-800">Suspicious Location</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">The device location was tracked. Check below:</p>
+          <p className="text-sm text-gray-600 mb-4">{locationText}</p>
           {isLoadingLocation ? (
             <div className="text-center p-10 text-gray-500 h-96 flex items-center justify-center"><p>Detecting location based on your connection...</p></div>
           ) : (
@@ -320,7 +374,7 @@ export default function Step4Male() {
         {/* Display do Celular e Texto de Venda */}
         <div className="bg-white rounded-lg shadow-md p-6 text-center">
           <div className="flex justify-center mb-4"><div className="relative"><Image src="/images/celulares.webp" alt="Phone" width={300} height={300} className="object-contain" unoptimized /></div></div>
-          <div className="space-y-4 text-sm text-gray-600"><p><strong>You have reached the end of your free consultation.</strong></p><p>Our satellite tracking system is the most advanced technology to find out what’s going on. But there’s a catch: keeping the satellites and servers running 24/7 is expensive.</p><p>The good news? You don’t have to spend a fortune to hire a private investigator.</p><p>It’s time to stop guessing and find out the truth. The answers are waiting for you. Click now and get instant access – before it’s too late!</p></div>
+          <div className="space-y-4 text-sm text-gray-600"><p><strong>You have reached the end of your free consultation.</strong></p><p>Our satellite tracking system is the most advanced technology to find out what's going on. But there's a catch: keeping the satellites and servers running 24/7 is expensive.</p><p>The good news? You don't have to spend a fortune to hire a private investigator.</p><p>It's time to stop guessing and find out the truth. The answers are waiting for you. Click now and get instant access – before it's too late!</p></div>
         </div>
 
         {/* Desconto Exclusivo */}
@@ -328,7 +382,12 @@ export default function Step4Male() {
           <h2 className="text-2xl font-bold text-center">EXCLUSIVE DISCOUNT</h2>
           <div className="text-xl text-red-400 line-through text-center my-2">$197</div>
           <div className="text-4xl font-bold mb-4 text-center">$27</div>
-          <div className="space-y-2 text-sm mb-6 text-left"><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>This person recently communicated whith 3 people from (IP)</span></div><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>Our AI detected a suspicious message</span></div><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was deteced that this person viewed the status of contact ****** 6 times today</span></div><div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was detected that this person archived 2 conversations yesterday</span></div></div>
+          <div className="space-y-2 text-sm mb-6 text-left">
+            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span id="location-feature">This person recently communicated with 3 people from (IP)</span></div>
+            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>Our AI detected a suspicious message</span></div>
+            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was detected that this person viewed the status of contact ****** 6 times today</span></div>
+            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was detected that this person archived 2 conversations yesterday</span></div>
+          </div>
           <a href="https://pay.hotmart.com/S98446517Y?off=ff8fxr0z&checkoutMode=10" target="_blank" rel="noopener noreferrer" className="block w-full rounded-full bg-[#26d366] py-3 text-lg font-bold text-white text-center shadow-[0_4px_12px_rgba(38,211,102,0.3)] transition duration-150 ease-in-out hover:bg-[#22b858] hover:shadow-lg">BUY NOW →</a>
         </div>
 

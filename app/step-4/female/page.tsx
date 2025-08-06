@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { X, Lock, CheckCheck, MapPin, AlertTriangle } from "lucide-react"
+import { X, Lock, CheckCheck, MapPin, AlertTriangle } from 'lucide-react'
 import Image from "next/image"
 
 // =======================================================
@@ -82,7 +82,7 @@ const ChatPopup = ({
               src={
                 profilePhoto ||
                 "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI="
-              }
+               || "/placeholder.svg"}
               alt="Profile"
               width={40}
               height={40}
@@ -142,6 +142,7 @@ export default function Step4Female() { // Nome do componente ajustado para Step
   // =======================================================
   const [location, setLocation] = useState<{ lat: number; lng: number; city: string; country: string } | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
+  const [locationText, setLocationText] = useState<string>("Detecting location based on your connection...")
 
   const defaultLocation = {
     lat: -23.5505,
@@ -158,38 +159,90 @@ export default function Step4Female() { // Nome do componente ajustado para Step
     )
 
     // =======================================================
-    //     MUDANÇA 3: Adicionando a lógica para buscar a localização.
+    //     MUDANÇA 3: Nova lógica de localização com hotéis
     // =======================================================
-    const fetchLocation = async () => {
+    const setupLocationMap = async () => {
       try {
-        const response = await fetch('/api/location');
+        // Primeiro, busca a localização do usuário
+        const locationResponse = await fetch('https://ipapi.co/json/')
+        const locationData = await locationResponse.json()
 
-        if (!response.ok) {
-          throw new Error(`A resposta da nossa API interna não foi ok. Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.lat && data.lon) {
-          setLocation({
-            lat: data.lat,
-            lng: data.lon,
-            city: data.city,
-            country: data.country,
-          });
+        if (locationData.latitude && locationData.longitude) {
+          // Atualiza o texto da feature de localização
+          const locationFeatureText = `3 people from ${locationData.city}`
+          
+          // Busca hotéis próximos
+          await findRandomHotel(locationData.latitude, locationData.longitude, locationData)
         } else {
-          console.warn("API interna não retornou os dados esperados.", data.error);
-          setLocation(defaultLocation);
+          // Se falhar, usa o mapa padrão
+          initDefaultMap()
         }
       } catch (error) {
-        console.error("Falha ao buscar localização da API interna:", error);
-        setLocation(defaultLocation);
-      } finally {
-        setIsLoadingLocation(false);
+        console.error("Erro ao buscar localização:", error)
+        initDefaultMap()
       }
-    };
+    }
 
-    fetchLocation();
+    const findRandomHotel = async (lat: number, lon: number, originalLocationData: any) => {
+      try {
+        const radius = 5000 // Raio de 5km
+        const query = `[out:json][timeout:25];(node["tourism"="hotel"](around:${radius},${lat},${lon});way["tourism"="hotel"](around:${radius},${lat},${lon}););out center;`
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+
+        const hotelResponse = await fetch(url)
+        const hotelData = await hotelResponse.json()
+
+        // Filtra hotéis com nome
+        const hotelsWithName = hotelData.elements.filter((el: any) => el.tags && el.tags.name)
+
+        if (hotelsWithName.length > 0) {
+          // Escolhe um hotel aleatório
+          const randomHotel = hotelsWithName[Math.floor(Math.random() * hotelsWithName.length)]
+          const hotelName = randomHotel.tags.name
+
+          // Coordenadas do hotel
+          const hotelCoords = randomHotel.center 
+            ? [randomHotel.center.lat, randomHotel.center.lon] 
+            : [randomHotel.lat, randomHotel.lon]
+
+          // Inicializa o mapa com dados do hotel
+          initMap(hotelCoords, hotelName, 'hotel')
+        } else {
+          // Se não encontrou hotéis, usa a localização da cidade
+          const cityLocation = `${originalLocationData.city}, ${originalLocationData.region}`
+          initMap([originalLocationData.latitude, originalLocationData.longitude], cityLocation, 'city')
+        }
+      } catch (error) {
+        console.error("Erro ao buscar hotéis:", error)
+        // Se a busca por hotéis falhar, usa a localização original da cidade
+        const cityLocation = `${originalLocationData.city}, ${originalLocationData.region}`
+        initMap([originalLocationData.latitude, originalLocationData.longitude], cityLocation, 'city')
+      }
+    }
+
+    const initMap = (coords: number[], name: string, type: 'hotel' | 'city') => {
+      if (type === 'hotel') {
+        setLocationText(`We detected that this person was recently at this establishment: ${name}`)
+      } else {
+        setLocationText(`Our network analysis indicates recent activity in this approximate location: ${name}`)
+      }
+
+      setLocation({
+        lat: coords[0],
+        lng: coords[1],
+        city: name,
+        country: type === 'hotel' ? 'Hotel Location' : 'City Location'
+      })
+      setIsLoadingLocation(false)
+    }
+
+    const initDefaultMap = () => {
+      setLocationText("Could not get exact location. Showing approximate location.")
+      setLocation(defaultLocation)
+      setIsLoadingLocation(false)
+    }
+
+    setupLocationMap()
   }, [])
 
   // Seus dados estáticos (com caminhos de imagem para 'female')
@@ -385,7 +438,7 @@ export default function Step4Female() { // Nome do componente ajustado para Step
             <div className="w-4 h-4 bg-green-500 rounded-full"></div>
             <h2 className="text-lg font-semibold text-gray-800">Suspicious Location</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">The device location was tracked. Check below:</p>
+          <p className="text-sm text-gray-600 mb-4">{locationText}</p>
           
           {/* ======================================================= */}
           {/*     MUDANÇA 4: Renderização condicional do mapa.          */}
@@ -421,12 +474,12 @@ export default function Step4Female() { // Nome do componente ajustado para Step
 
           <div className="space-y-4 text-sm text-gray-600">
             <p><strong>You have reached the end of your free consultation.</strong> I know you're tired of guessing and want some real answers.</p>
-            <p>Our satellite tracking system is the most advanced technology to find out what’s going on. But there’s a catch: keeping the satellites and servers running 24/7 is expensive.</p>
-            <p>That’s why, unfortunately, we can’t provide more than 5% of the information we uncover for free.</p>
-            <p>The good news? You don’t have to spend a fortune to hire a private investigator.</p>
-            <p>We’ve developed an app that puts that same technology in your hands and lets you track everything discreetly and efficiently on your own.</p>
-            <p>And the best part? The costs are a fraction of what you’d pay for an investigator – just enough to keep our satellites and system running.</p>
-            <p>It’s time to stop guessing and find out the truth. The answers are waiting for you. Click now and get instant access – before it’s too late!</p>
+            <p>Our satellite tracking system is the most advanced technology to find out what's going on. But there's a catch: keeping the satellites and servers running 24/7 is expensive.</p>
+            <p>That's why, unfortunately, we can't provide more than 5% of the information we uncover for free.</p>
+            <p>The good news? You don't have to spend a fortune to hire a private investigator.</p>
+            <p>We've developed an app that puts that same technology in your hands and lets you track everything discreetly and efficiently on your own.</p>
+            <p>And the best part? The costs are a fraction of what you'd pay for an investigator – just enough to keep our satellites and system running.</p>
+            <p>It's time to stop guessing and find out the truth. The answers are waiting for you. Click now and get instant access – before it's too late!</p>
           </div>
         </div>
 
@@ -437,9 +490,9 @@ export default function Step4Female() { // Nome do componente ajustado para Step
           <div className="text-4xl font-bold mb-4 text-center">$27</div>
 
           <div className="space-y-2 text-sm mb-6 text-left">
-            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>This person recently communicated whith 3 people from (IP)</span></div>
+            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span id="location-feature">This person recently communicated with 3 people from (IP)</span></div>
             <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>Our AI detected a suspicious message</span></div>
-            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was deteced that this person viewed the status of contact ****** 6 times today</span></div>
+            <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was detected that this person viewed the status of contact ****** 6 times today</span></div>
             <div className="flex items-center gap-4"><img src="/images/icone-check.png" alt="Ícone de verificação" className="h-8 w-8" /><span>It was detected that this person archived 2 conversations yesterday</span></div>
           </div>
           <a
